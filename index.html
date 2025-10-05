@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Reconciliation System - CESTIS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #1e3a5f;
+            --primary-green: #0e7c3a;
+            --light-green: #E8F5E9;
+            --dark-green: #4CAF50;
+            --navy: #162841;
+            --gray-light: #f5f7fa;
+            --gray-medium: #e0e0e0;
+            --text-dark: #333;
+            --text-medium: #666;
+            --error: #f44336;
+            --warning: #FFC107;
+            --success: #4CAF50;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--light-green) 0%, #f0f9ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-blue) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px 15px 0 0;
+            box-shadow: 0 5px 20px rgba(30, 58, 95, 0.2);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .logo svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .organization-info {
+            flex: 1;
+        }
+
+        .organization-info h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .organization-info h2 {
+            font-size: 1.2em;
+            font-weight: 400;
+            opacity: 0.95;
+        }
+
+        .organization-info h3 {
+            font-size: 1.5em;
+            margin-top: 10px;
+            color: var(--light-green);
+        }
+
+        .datetime-display {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .datetime-display .time {
+            font-size: 1.8em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .datetime-display .date {
+            font-size: 1em;
+            margin-top: 5px;
+            opacity: 0.95;
+        }
+
+        .status-bar {
+            background: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-item .label {
+            color: var(--text-medium);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .status-item .value {
+            color: var(--primary-blue);
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .main-content {
+            background: white;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            background: var(--gray-light);
+            border-left: 4px solid var(--primary-green);
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        .section-title {
+            color: var(--primary-blue);
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--primary-blue);
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-group label .required {
+            color: var(--error);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--gray-medium);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(14, 124, 58, 0.2);
+        }
+
+        .form-group input[readonly] {
+            background: #f0f0f0;
+            cursor: not-allowed;
+        }
+
+        .amount-input {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .cheque-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .cheque-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .cheque-table th {
+            background: var(--primary-green);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .cheque-table td {
+            padding: 10px 12px;
+            border: 1px solid var(--gray-medium);
+        }
+
+        .cheque-table input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--gray-medium);
+            border-radius: 4px;
+        }
+
+        .cheque-table input[type="checkbox"] {
+            width: auto;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .add-row-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: var(--primary-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-row-btn:hover {
+            background: var(--dark-green);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .remove-btn {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .remove-btn:hover {
+            background: #d32f2f;
+        }
+
+        .reconciliation-summary {
+            background: linear-gradient(135deg, var(--light-green) 0%, #ffffff 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 30px;
+            border: 2px solid var(--primary-green);
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-item .label {
+            color: var(--text-medium);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .summary-item .value {
+            color: var(--primary-blue);
+            font-size: 1.5em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .summary-item.highlight {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .summary-item.highlight .label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .summary-item.highlight .value {
+            color: white;
+        }
+
+        .variance-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+
+        .variance-indicator.balanced {
+            background: var(--light-green);
+            color: var(--dark-green);
+        }
+
+        .variance-indicator.unbalanced {
+            background: #ffebee;
+            color: var(--error);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid var(--gray-medium);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--navy) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 58, 95, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(14, 124, 58, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.3);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-success {
+            background: var(--light-green);
+            color: var(--dark-green);
+            border: 2px solid var(--primary-green);
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: var(--primary-blue);
+            border: 2px solid #90caf9;
+        }
+
+        .alert-warning {
+            background: #fff8e1;
+            color: #f57c00;
+            border: 2px solid var(--warning);
+        }
+
+        .summary-info {
+            background: #e3f2fd;
+            border-left: 4px solid var(--primary-blue);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .summary-info h4 {
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+        }
+
+        .summary-info p {
+            color: var(--text-medium);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="45" fill="#0e7c3a" opacity="0.1"/>
+                            <path d="M50 10 C30 10, 10 30, 10 50 C10 70, 30 90, 50 90 C70 90, 90 70, 90 50 C90 30, 70 10, 50 10" 
+                                  stroke="#0e7c3a" stroke-width="3" fill="none"/>
+                            <rect x="35" y="30" width="30" height="20" fill="#0e7c3a" opacity="0.8" rx="2"/>
+                            <rect x="40" y="50" width="20" height="15" fill="#0e7c3a" opacity="0.6" rx="2"/>
+                            <path d="M30 70 Q50 65, 70 70" stroke="#0e7c3a" stroke-width="2" fill="none"/>
+                            <text x="50" y="85" text-anchor="middle" font-size="12" fill="#0e7c3a" font-weight="bold">CESTIS</text>
+                        </svg>
+                    </div>
+                    <div class="organization-info">
+                        <h1>COMMUNITY EDUCATIONAL & SKILLS</h1>
+                        <h2>TRAINING INSTITUTE AND SERVICES</h2>
+                        <h3>BANK RECONCILIATION SYSTEM</h3>
+                    </div>
+                </div>
+                <div class="datetime-display">
+                    <div class="time" id="currentTime">00:00:00</div>
+                    <div class="date" id="currentDate">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="label">Current Month</div>
+                <div class="value" id="currentMonth">-</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Total Cheques Issued</div>
+                <div class="value" id="totalChequesIssued">0</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Outstanding Cheques</div>
+                <div class="value" id="outstandingChequeCount">0</div>
+            </div>
+            <div class="status-item" id="varianceStatus">
+                <div class="label">Variance Status</div>
+                <div class="value">-</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div id="alertContainer"></div>
+
+            <div class="section">
+                <h2 class="section-title">📋 Basic Information</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="projectName">Project Name <span class="required">*</span></label>
+                        <select id="projectName" required onchange="updateCalculations()">
+                            <option value="">Select Project</option>
+                            <option value="HAZARD STC - CTDI" selected>HAZARD STC - CTDI</option>
+                            <option value="OTHER">Other Project</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reconciliationMonth">Reconciliation Month <span class="required">*</span></label>
+                        <input type="month" id="reconciliationMonth" required onchange="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="preparedBy">Prepared By <span class="required">*</span></label>
+                        <input type="text" id="preparedBy" placeholder="Enter your name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="preparationDate">Preparation Date <span class="required">*</span></label>
+                        <input type="date" id="preparationDate" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">💰 Cash Book Balances</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cashBookBeginning">Balance shown in Cash Book Beginning of month ($) <span class="required">*</span></label>
+                        <input type="number" id="cashBookBeginning" class="amount-input" placeholder="0.00" step="0.01" required onchange="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="bankStatementBalance">Balance on Bank Statement ($) <span class="required">*</span></label>
+                        <input type="number" id="bankStatementBalance" class="amount-input" placeholder="0.00" step="0.01" required onchange="updateCalculations()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">➕ Deposits</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="monthlySubvention">Deposit during month Subvention ($)</label>
+                        <input type="number" id="monthlySubvention" class="amount-input" placeholder="0.00" step="0.01" onchange="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="depositsNotShown">Deposit made not shown on statement ($)</label>
+                        <input type="number" id="depositsNotShown" class="amount-input" placeholder="0.00" step="0.01" onchange="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="otherDeposits">Other Deposits* ($)<small style="display: block; font-weight: normal; color: #666; margin-top: 5px;">(stale-date cheques, returned cheques, lodgments)</small></label>
+                        <input type="number" id="otherDeposits" class="amount-input" placeholder="0.00" step="0.01" onchange="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="totalDeposits">Total Deposits (A) ($)</label>
+                        <input type="number" id="totalDeposits" class="amount-input" placeholder="0.00" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">📝 Total Cheques Issued During the Month</h2>
+                <div class="summary-info">
+                    <h4>ℹ️ Recording All Cheques</h4>
+                    <p>This section records ALL cheques issued during the month for tracking purposes. Use the "Cleared" checkbox to indicate which cheques have been presented and cleared by the bank.</p>
+                </div>
+                <div class="cheque-table">
+                    <table id="allChequesTable">
+                        <thead>
+                            <tr>
+                                <th>Cheque No.</th>
+                                <th>Cheque Date</th>
+                                <th>Payee</th>
+                                <th>Cheque Amount ($)</th>
+                                <th>Cleared</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allChequesTableBody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" style="text-align: right; font-weight: bold;">Total Issued:</td>
+                                <td><input type="number" id="totalChequesIssuedAmount" class="amount-input" style="font-weight: bold;" readonly></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <button class="add-row-btn" onclick="addChequeRow()">+ Add Cheque</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">⚠️ Outstanding Cheques (Not Shown on Bank Statement)</h2>
+                <div class="summary-info">
+                    <h4>ℹ️ Outstanding Cheques Summary</h4>
+                    <p>These are cheques that have been issued but have not yet been presented to the bank or cleared. This amount will be deducted from the cash book balance for reconciliation.</p>
+                </div>
+                <div class="cheque-table">
+                    <table id="outstandingChequesTable">
+                        <thead>
+                            <tr>
+                                <th>Cheque No.</th>
+                                <th>Cheque Date</th>
+                                <th>Payee</th>
+                                <th>Cheque Amount ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outstandingChequesTableBody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" style="text-align: right; font-weight: bold;">Total Outstanding:</td>
+                                <td><input type="number" id="totalOutstandingCheques" class="amount-input" style="font-weight: bold; background: #ffebee; color: var(--error);" readonly></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">🏦 Bank Charges</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bankCharges">Bank Charges ($)</label>
+                        <input type="number" id="bankCharges" class="amount-input" placeholder="0.00" step="0.01" onchange="updateCalculations()">
+                    </div>
+                    <div class="form-group">
+                        <label for="totalCharges">Total Charges (B) ($)</label>
+                        <input type="number" id="totalCharges" class="amount-input" placeholder="0.00" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reconciliation-summary">
+                <h2 class="section-title">📊 Reconciliation Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="label">Cash Book Balance b/d</div>
+                        <div class="value" id="summaryBookBalance">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Add: Deposits in Transit</div>
+                        <div class="value" id="summaryDepositsInTransit">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Less: Outstanding Cheques</div>
+                        <div class="value" id="summaryOutstandingCheques">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="label">Less: Bank Charges</div>
+                        <div class="value" id="summaryBankCharges">$0.00</div>
+                    </div>
+                    <div class="summary-item highlight">
+                        <div class="label">Adjusted Cash Book Balance</div>
+                        <div class="value" id="adjustedCashBookBalance">$0.00</div>
+                    </div>
+                    <div class="summary-item highlight">
+                        <div class="label">Bank Balance</div>
+                        <div class="value" id="summaryBankBalance">$0.00</div>
+                    </div>
+                </div>
+                <div style="margin-top: 30px; text-align: center;">
+                    <h3 style="color: var(--primary-blue); margin-bottom: 10px;">Reconciliation Variance</h3>
+                    <div style="font-size: 2em; font-weight: bold;" id="varianceAmount">$0.00</div>
+                    <span class="variance-indicator" id="varianceIndicator">Checking...</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">✍️ Approval & Verification</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="checkedBy">Checked By</label>
+                        <input type="text" id="checkedBy" placeholder="Name of checker">
+                    </div>
+                    <div class="form-group">
+                        <label for="checkedDate">Date Checked</label>
+                        <input type="date" id="checkedDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="verifiedBy">Verified By</label>
+                        <input type="text" id="verifiedBy" placeholder="Name of verifier">
+                    </div>
+                    <div class="form-group">
+                        <label for="verifiedDate">Date Verified</label>
+                        <input type="date" id="verifiedDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Additional Notes</label>
+                    <textarea id="notes" rows="4" placeholder="Enter any additional notes or comments..."></textarea>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-success" onclick="saveReconciliation()">💾 Save Reconciliation</button>
+                <button class="btn btn-danger" onclick="generatePDF()">📄 Generate PDF Report</button>
+                <button class="btn btn-primary" onclick="exportToExcel()">📊 Export to Excel</button>
+                <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear Form</button>
+                <button class="btn btn-secondary" onclick="printReconciliation()">🖨️ Print</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Global variables
+let reconciliationData = [];
+let chequeCounter = 0;
+
+// Load data from localStorage
+try {
+    const storedData = localStorage.getItem('reconciliationData');
+    if (storedData) {
+        reconciliationData = JSON.parse(storedData);
+        if (!Array.isArray(reconciliationData)) {
+            reconciliationData = [];
+        }
+    }
+} catch (error) {
+    console.error('Error loading data:', error);
+    reconciliationData = [];
+}
+
+// Initialize the form
+function init() {
+    setDefaultValues();
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+}
+
+// Update date and time display
+function updateDateTime() {
+    const now = new Date();
+    document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+}
+
+// Set default values
+function setDefaultValues() {
+    const today = new Date();
+    document.getElementById('preparationDate').value = today.toISOString().split('T')[0];
+    document.getElementById('reconciliationMonth').value = today.toISOString().slice(0, 7);
+    document.getElementById('currentMonth').textContent = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    document.getElementById('projectName').value = 'HAZARD STC - CTDI';
+}
+
+// Add cheque row
+function addChequeRow() {
+    const tbody = document.getElementById('allChequesTableBody');
+    const row = tbody.insertRow();
+    chequeCounter++;
+    
+    row.innerHTML = '<td><input type="text" placeholder="CHQ-' + String(chequeCounter).padStart(3, '0') + '" class="cheque-no"></td>' +
+                    '<td><input type="date" class="cheque-date"></td>' +
+                    '<td><input type="text" placeholder="Payee name" class="cheque-payee"></td>' +
+                    '<td><input type="number" placeholder="0.00" step="0.01" class="cheque-amount amount-input" onchange="updateChequeCalculations()"></td>' +
+                    '<td style="text-align: center;"><input type="checkbox" class="cheque-cleared" onchange="updateOutstandingCheques()"></td>' +
+                    '<td><button class="remove-btn" onclick="removeChequeRow(this)">Remove</button></td>';
+}
+
+// Remove cheque row
+function removeChequeRow(button) {
+    button.closest('tr').remove();
+    updateChequeCalculations();
+    updateOutstandingCheques();
+}
+
+// Update cheque calculations
+function updateChequeCalculations() {
+    let totalIssued = 0;
+    let totalCheques = 0;
+    
+    document.querySelectorAll('#allChequesTableBody tr').forEach(function(row) {
+        const amount = parseFloat(row.querySelector('.cheque-amount').value) || 0;
+        totalIssued += amount;
+        totalCheques++;
+    });
+    
+    document.getElementById('totalChequesIssuedAmount').value = totalIssued.toFixed(2);
+    document.getElementById('totalChequesIssued').textContent = totalCheques;
+    
+    updateOutstandingCheques();
+}
+
+// Update outstanding cheques
+function updateOutstandingCheques() {
+    const outstandingBody = document.getElementById('outstandingChequesTableBody');
+    outstandingBody.innerHTML = '';
+    
+    let totalOutstanding = 0;
+    let outstandingCount = 0;
+    
+    document.querySelectorAll('#allChequesTableBody tr').forEach(function(row) {
+        const isCleared = row.querySelector('.cheque-cleared').checked;
+        if (!isCleared) {
+            const chequeNo = row.querySelector('.cheque-no').value;
+            const chequeDate = row.querySelector('.cheque-date').value;
+            const payee = row.querySelector('.cheque-payee').value;
+            const amount = parseFloat(row.querySelector('.cheque-amount').value) || 0;
+            
+            if (amount > 0) {
+                const outstandingRow = outstandingBody.insertRow();
+                outstandingRow.innerHTML = '<td>' + chequeNo + '</td>' +
+                                          '<td>' + chequeDate + '</td>' +
+                                          '<td>' + payee + '</td>' +
+                                          '<td style="text-align: right;">$' + amount.toFixed(2) + '</td>';
+                totalOutstanding += amount;
+                outstandingCount++;
+            }
+        }
+    });
+    
+    document.getElementById('totalOutstandingCheques').value = totalOutstanding.toFixed(2);
+    document.getElementById('outstandingChequeCount').textContent = outstandingCount;
+    
+    updateCalculations();
+}
+
+// Update calculations
+function updateCalculations() {
+    const cashBookBalance = parseFloat(document.getElementById('cashBookBeginning').value) || 0;
+    const bankStatementBalance = parseFloat(document.getElementById('bankStatementBalance').value) || 0;
+    const monthlySubvention = parseFloat(document.getElementById('monthlySubvention').value) || 0;
+    const depositsNotShown = parseFloat(document.getElementById('depositsNotShown').value) || 0;
+    const otherDeposits = parseFloat(document.getElementById('otherDeposits').value) || 0;
+    const bankCharges = parseFloat(document.getElementById('bankCharges').value) || 0;
+    const outstandingCheques = parseFloat(document.getElementById('totalOutstandingCheques').value) || 0;
+    
+    const totalDeposits = monthlySubvention + depositsNotShown + otherDeposits;
+    document.getElementById('totalDeposits').value = totalDeposits.toFixed(2);
+    document.getElementById('totalCharges').value = bankCharges.toFixed(2);
+    
+    const adjustedCashBook = cashBookBalance + totalDeposits - outstandingCheques - bankCharges;
+    
+    document.getElementById('summaryBookBalance').textContent = '$' + cashBookBalance.toFixed(2);
+    document.getElementById('summaryDepositsInTransit').textContent = '$' + totalDeposits.toFixed(2);
+    document.getElementById('summaryOutstandingCheques').textContent = '$' + outstandingCheques.toFixed(2);
+    document.getElementById('summaryBankCharges').textContent = '$' + bankCharges.toFixed(2);
+    document.getElementById('adjustedCashBookBalance').textContent = '$' + adjustedCashBook.toFixed(2);
+    document.getElementById('summaryBankBalance').textContent = '$' + bankStatementBalance.toFixed(2);
+    
+    const variance = adjustedCashBook - bankStatementBalance;
+    const varianceElement = document.getElementById('varianceAmount');
+    const indicatorElement = document.getElementById('varianceIndicator');
+    const statusElement = document.getElementById('varianceStatus').querySelector('.value');
+    
+    varianceElement.textContent = '$' + Math.abs(variance).toFixed(2);
+    
+    if (Math.abs(variance) < 0.01) {
+        indicatorElement.textContent = 'BALANCED';
+        indicatorElement.className = 'variance-indicator balanced';
+        varianceElement.style.color = '#4CAF50';
+        statusElement.textContent = 'Balanced';
+        statusElement.style.color = '#4CAF50';
+    } else {
+        indicatorElement.textContent = 'UNBALANCED';
+        indicatorElement.className = 'variance-indicator unbalanced';
+        varianceElement.style.color = '#f44336';
+        statusElement.textContent = '$' + Math.abs(variance).toFixed(2) + ' ' + (variance > 0 ? 'Over' : 'Under');
+        statusElement.style.color = '#f44336';
+    }
+}
+
+// Save reconciliation
+function saveReconciliation() {
+    if (!validateForm()) {
+        showAlert('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const allCheques = [];
+    const outstandingCheques = [];
+    
+    document.querySelectorAll('#allChequesTableBody tr').forEach(function(row) {
+        const chequeNo = row.querySelector('.cheque-no').value;
+        const chequeDate = row.querySelector('.cheque-date').value;
+        const chequePayee = row.querySelector('.cheque-payee').value;
+        const chequeAmount = parseFloat(row.querySelector('.cheque-amount').value) || 0;
+        const isCleared = row.querySelector('.cheque-cleared').checked;
+        
+        if (chequeNo || chequeAmount) {
+            const cheque = {
+                chequeNo: chequeNo,
+                chequeDate: chequeDate,
+                chequePayee: chequePayee,
+                amount: chequeAmount,
+                cleared: isCleared
+            };
+            
+            allCheques.push(cheque);
+            
+            if (!isCleared) {
+                outstandingCheques.push(cheque);
+            }
+        }
+    });
+    
+    const reconciliation = {
+        id: Date.now(),
+        projectName: document.getElementById('projectName').value,
+        month: document.getElementById('reconciliationMonth').value,
+        preparedBy: document.getElementById('preparedBy').value,
+        preparationDate: document.getElementById('preparationDate').value,
+        cashBookBeginning: parseFloat(document.getElementById('cashBookBeginning').value) || 0,
+        bankStatementBalance: parseFloat(document.getElementById('bankStatementBalance').value) || 0,
+        monthlySubvention: parseFloat(document.getElementById('monthlySubvention').value) || 0,
+        depositsNotShown: parseFloat(document.getElementById('depositsNotShown').value) || 0,
+        otherDeposits: parseFloat(document.getElementById('otherDeposits').value) || 0,
+        bankCharges: parseFloat(document.getElementById('bankCharges').value) || 0,
+        totalChequesIssued: parseFloat(document.getElementById('totalChequesIssuedAmount').value) || 0,
+        totalOutstandingCheques: parseFloat(document.getElementById('totalOutstandingCheques').value) || 0,
+        allCheques: allCheques,
+        outstandingCheques: outstandingCheques,
+        checkedBy: document.getElementById('checkedBy').value,
+        checkedDate: document.getElementById('checkedDate').value,
+        verifiedBy: document.getElementById('verifiedBy').value,
+        verifiedDate: document.getElementById('verifiedDate').value,
+        notes: document.getElementById('notes').value,
+        timestamp: new Date().toISOString()
+    };
+    
+    const existingIndex = reconciliationData.findIndex(function(r) { return r.month === reconciliation.month; });
+    if (existingIndex >= 0) {
+        reconciliationData[existingIndex] = reconciliation;
+    } else {
+        reconciliationData.push(reconciliation);
+    }
+    
+    localStorage.setItem('reconciliationData', JSON.stringify(reconciliationData));
+    
+    showAlert('Reconciliation saved successfully!', 'success');
+}
+
+// Validate form
+function validateForm() {
+    const requiredFields = ['projectName', 'reconciliationMonth', 'preparedBy', 'preparationDate', 'cashBookBeginning', 'bankStatementBalance'];
+    
+    for (let i = 0; i < requiredFields.length; i++) {
+        if (!document.getElementById(requiredFields[i]).value) {
+            document.getElementById(requiredFields[i]).focus();
+            return false;
+        }
+    }
+    return true;
+}
+
+// Show alert
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-' + type;
+    const icon = type === 'success' ? '✔' : type === 'warning' ? '⚠' : 'ℹ';
+    alert.innerHTML = '<span>' + icon + '</span><span>' + message + '</span>';
+    alertContainer.appendChild(alert);
+    
+    setTimeout(function() { alert.remove(); }, 5000);
+}
+
+// Export to Excel
+function exportToExcel() {
+    const wb = XLSX.utils.book_new();
+    
+    // Main reconciliation sheet
+    const wsData = [];
+    wsData.push(['COMMUNITY EDUCATIONAL & SKILLS TRAINING INSTITUTE AND SERVICES']);
+    wsData.push(['BANK RECONCILIATION REPORT']);
+    wsData.push([]);
+    wsData.push(['Project Name:', document.getElementById('projectName').value]);
+    wsData.push(['Month:', document.getElementById('reconciliationMonth').value]);
+    wsData.push(['Prepared By:', document.getElementById('preparedBy').value]);
+    wsData.push(['Date:', document.getElementById('preparationDate').value]);
+    wsData.push([]);
+    wsData.push(['BALANCES']);
+    wsData.push(['Cash Book Beginning Balance:', document.getElementById('cashBookBeginning').value]);
+    wsData.push(['Bank Statement Balance:', document.getElementById('bankStatementBalance').value]);
+    wsData.push([]);
+    wsData.push(['DEPOSITS']);
+    wsData.push(['Monthly Subvention:', document.getElementById('monthlySubvention').value]);
+    wsData.push(['Deposits Not Shown:', document.getElementById('depositsNotShown').value]);
+    wsData.push(['Other Deposits:', document.getElementById('otherDeposits').value]);
+    wsData.push(['Total Deposits:', document.getElementById('totalDeposits').value]);
+    wsData.push([]);
+    wsData.push(['CHEQUES']);
+    wsData.push(['Total Cheques Issued:', document.getElementById('totalChequesIssuedAmount').value]);
+    wsData.push(['Total Outstanding Cheques:', document.getElementById('totalOutstandingCheques').value]);
+    wsData.push([]);
+    wsData.push(['BANK CHARGES']);
+    wsData.push(['Bank Charges:', document.getElementById('bankCharges').value]);
+    wsData.push([]);
+    wsData.push(['RECONCILIATION SUMMARY']);
+    wsData.push(['Adjusted Cash Book Balance:', document.getElementById('adjustedCashBookBalance').textContent]);
+    wsData.push(['Bank Balance:', document.getElementById('summaryBankBalance').textContent]);
+    wsData.push(['Variance:', document.getElementById('varianceAmount').textContent]);
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Reconciliation');
+    
+    // All cheques sheet
+    const chequesData = [['Cheque No', 'Date', 'Payee', 'Amount', 'Status']];
+    document.querySelectorAll('#allChequesTableBody tr').forEach(function(row) {
+        const chequeNo = row.querySelector('.cheque-no').value;
+        const chequeDate = row.querySelector('.cheque-date').value;
+        const payee = row.querySelector('.cheque-payee').value;
+        const amount = row.querySelector('.cheque-amount').value;
+        const cleared = row.querySelector('.cheque-cleared').checked ? 'Cleared' : 'Outstanding';
+        if (chequeNo || amount) {
+            chequesData.push([chequeNo, chequeDate, payee, amount, cleared]);
+        }
+    });
+    
+    const wsChequesAll = XLSX.utils.aoa_to_sheet(chequesData);
+    XLSX.utils.book_append_sheet(wb, wsChequesAll, 'All Cheques');
+    
+    // Outstanding cheques sheet
+    const outstandingData = [['Cheque No', 'Date', 'Payee', 'Amount']];
+    document.querySelectorAll('#outstandingChequesTableBody tr').forEach(function(row) {
+        const cells = row.cells;
+        outstandingData.push([
+            cells[0].textContent,
+            cells[1].textContent,
+            cells[2].textContent,
+            cells[3].textContent
+        ]);
+    });
+    
+    const wsOutstanding = XLSX.utils.aoa_to_sheet(outstandingData);
+    XLSX.utils.book_append_sheet(wb, wsOutstanding, 'Outstanding Cheques');
+    
+    const fileName = 'CESTIS_Bank_Reconciliation_' + document.getElementById('reconciliationMonth').value + '.xlsx';
+    XLSX.writeFile(wb, fileName);
+    
+    showAlert('Excel file exported successfully!', 'success');
+}
+
+// Generate PDF
+function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(14);
+    doc.text('COMMUNITY EDUCATIONAL & SKILLS', 105, 15, { align: 'center' });
+    doc.text('TRAINING INSTITUTE AND SERVICES', 105, 22, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text('BANK RECONCILIATION REPORT', 105, 35, { align: 'center' });
+    
+    // Basic Info
+    doc.setFontSize(10);
+    doc.text('Project: ' + document.getElementById('projectName').value, 20, 50);
+    doc.text('Month: ' + document.getElementById('reconciliationMonth').value, 120, 50);
+    doc.text('Prepared By: ' + document.getElementById('preparedBy').value, 20, 57);
+    doc.text('Date: ' + document.getElementById('preparationDate').value, 120, 57);
+    
+    // Balances
+    doc.setFontSize(11);
+    doc.text('BALANCES', 20, 70);
+    doc.setFontSize(10);
+    doc.text('Cash Book Balance: $' + document.getElementById('cashBookBeginning').value, 20, 77);
+    doc.text('Bank Statement Balance: $' + document.getElementById('bankStatementBalance').value, 120, 77);
+    
+    // Deposits
+    doc.setFontSize(11);
+    doc.text('DEPOSITS', 20, 90);
+    doc.setFontSize(10);
+    doc.text('Monthly Subvention: $' + document.getElementById('monthlySubvention').value, 20, 97);
+    doc.text('Deposits Not Shown: $' + document.getElementById('depositsNotShown').value, 20, 104);
+    doc.text('Other Deposits: $' + document.getElementById('otherDeposits').value, 20, 111);
+    doc.text('Total Deposits: $' + document.getElementById('totalDeposits').value, 20, 118);
+    
+    // Cheques Summary
+    doc.setFontSize(11);
+    doc.text('CHEQUES SUMMARY', 20, 131);
+    doc.setFontSize(10);
+    doc.text('Total Cheques Issued: $' + document.getElementById('totalChequesIssuedAmount').value, 20, 138);
+    doc.text('Outstanding Cheques: $' + document.getElementById('totalOutstandingCheques').value, 20, 145);
+    
+    // Bank Charges
+    doc.text('Bank Charges: $' + document.getElementById('bankCharges').value, 20, 158);
+    
+    // Reconciliation Summary
+    doc.setFontSize(11);
+    doc.text('RECONCILIATION SUMMARY', 20, 171);
+    doc.setFontSize(10);
+    doc.text('Adjusted Cash Book Balance: ' + document.getElementById('adjustedCashBookBalance').textContent, 20, 178);
+    doc.text('Bank Balance: ' + document.getElementById('summaryBankBalance').textContent, 20, 185);
+    doc.text('Variance: ' + document.getElementById('varianceAmount').textContent, 20, 192);
+    doc.text('Status: ' + document.getElementById('varianceIndicator').textContent, 20, 199);
+    
+    // Outstanding Cheques Table
+    if (document.querySelectorAll('#outstandingChequesTableBody tr').length > 0) {
+        doc.setFontSize(11);
+        doc.text('OUTSTANDING CHEQUES DETAIL', 20, 212);
+        
+        const tableData = [];
+        document.querySelectorAll('#outstandingChequesTableBody tr').forEach(function(row) {
+            const cells = row.cells;
+            tableData.push([
+                cells[0].textContent,
+                cells[1].textContent,
+                cells[2].textContent,
+                cells[3].textContent
+            ]);
+        });
+        
+        doc.autoTable({
+            head: [['Cheque No', 'Date', 'Payee', 'Amount']],
+            body: tableData,
+            startY: 217,
+            theme: 'striped'
+        });
+    }
+    
+    // Approval section
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 230;
+    doc.setFontSize(10);
+    doc.text('Checked By: ' + document.getElementById('checkedBy').value, 20, finalY);
+    doc.text('Verified By: ' + document.getElementById('verifiedBy').value, 120, finalY);
+    
+    const fileName = 'Bank_Reconciliation_' + document.getElementById('reconciliationMonth').value + '.pdf';
+    doc.save(fileName);
+    
+    showAlert('PDF generated successfully!', 'success');
+}
+
+// Clear form
+function clearForm() {
+    if (confirm('Are you sure you want to clear the form?')) {
+        document.querySelectorAll('input, textarea, select').forEach(function(field) {
+            if (field.type !== 'date' && field.id !== 'preparationDate' && field.id !== 'reconciliationMonth' && field.id !== 'projectName') {
+                field.value = '';
+                if (field.type === 'checkbox') {
+                    field.checked = false;
+                }
+            }
+        });
+        
+        document.getElementById('allChequesTableBody').innerHTML = '';
+        document.getElementById('outstandingChequesTableBody').innerHTML = '';
+        chequeCounter = 0;
+        
+        updateCalculations();
+        showAlert('Form cleared', 'success');
+    }
+}
+
+// Print reconciliation
+function printReconciliation() {
+    window.print();
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
+</body>
+</html>
